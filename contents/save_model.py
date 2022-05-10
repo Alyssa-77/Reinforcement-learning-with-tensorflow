@@ -3,7 +3,7 @@ View more, visit my tutorial page: https://mofanpy.com/tutorials/
 My Youtube Channel: https://www.youtube.com/user/MorvanZhou
 
 Dependencies:
-torch: 0.4
+torch: 0.4  (me 1.11.0)
 matplotlib
 """
 import torch
@@ -19,8 +19,9 @@ y = x.pow(2) + 0.2*torch.rand(x.size())  # noisy y data (tensor), shape=(100, 1)
 # x, y = Variable(x, requires_grad=False), Variable(y, requires_grad=False)
 
 
+# ============================== 儲存NN ==============================
 def save():
-    # save net1
+    # 建立NN
     net1 = torch.nn.Sequential(
         torch.nn.Linear(1, 10),
         torch.nn.ReLU(),
@@ -43,14 +44,13 @@ def save():
     plt.scatter(x.data.numpy(), y.data.numpy())
     plt.plot(x.data.numpy(), prediction.data.numpy(), 'r-', lw=5)
 
-    # 2 ways to save the net
-    torch.save(net1, 'net.pkl')  # save entire net
-    torch.save(net1.state_dict(), 'net_params.pkl')   # save only the parameters
+    # 有2種方式去存
+    torch.save(net1, 'net.pkl')  # 儲存整個NN，到net.pkl
+    torch.save(net1.state_dict(), 'net_params.pkl')   # 只儲存NN的參數，到net_params.pkl。(省時)
 
-
+# ============================== (法1) 提取整個NN ==============================
 def restore_net():
-    # restore entire net1 to net2
-    net2 = torch.load('net.pkl')
+    net2 = torch.load('net.pkl') #提取net.pkl檔案到net2
     prediction = net2(x)
 
     # plot result
@@ -59,17 +59,16 @@ def restore_net():
     plt.scatter(x.data.numpy(), y.data.numpy())
     plt.plot(x.data.numpy(), prediction.data.numpy(), 'r-', lw=5)
 
-
+# ============================== (法2) 提取NN參數 ==============================
+# 只有參數所以要先建立一個一模一樣的NN，再把參數放進去。
 def restore_params():
-    # restore only the parameters in net1 to net3
-    net3 = torch.nn.Sequential(
+    net3 = torch.nn.Sequential(  
         torch.nn.Linear(1, 10),
         torch.nn.ReLU(),
         torch.nn.Linear(10, 1)
     )
 
-    # copy net1's parameters into net3
-    net3.load_state_dict(torch.load('net_params.pkl'))
+    net3.load_state_dict(torch.load('net_params.pkl')) #提取net_params.pkl檔案到net3
     prediction = net3(x)
 
     # plot result
@@ -79,11 +78,8 @@ def restore_params():
     plt.plot(x.data.numpy(), prediction.data.numpy(), 'r-', lw=5)
     plt.show()
 
-# save net1
+
+# ========================== main ==========================
 save()
-
-# restore entire net (may slow)
 restore_net()
-
-# restore only the net parameters
 restore_params()
