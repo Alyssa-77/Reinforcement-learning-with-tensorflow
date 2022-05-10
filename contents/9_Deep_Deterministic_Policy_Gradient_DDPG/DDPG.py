@@ -2,7 +2,6 @@
 Deep Deterministic Policy Gradient (DDPG), Reinforcement Learning.
 DDPG is Actor Critic based algorithm.
 Pendulum example.
-
 View more on my tutorial page: https://morvanzhou.github.io/tutorials/
 
 Using:
@@ -34,11 +33,10 @@ MEMORY_CAPACITY = 10000
 BATCH_SIZE = 32
 
 RENDER = False
-OUTPUT_GRAPH = True
+OUTPUT_GRAPH = True  #是否輸出tensorflow的圖
 ENV_NAME = 'Pendulum-v0'
 
 ###############################  Actor  ####################################
-
 
 class Actor(object):
     def __init__(self, sess, action_dim, action_bound, learning_rate, replacement):
@@ -93,17 +91,17 @@ class Actor(object):
         s = s[np.newaxis, :]    # single state
         return self.sess.run(self.a, feed_dict={S: s})[0]  # single action
 
-    def add_grad_to_graph(self, a_grads):
+    def add_grad_to_graph(self, a_grads): #把從critic來的梯度(a_grads)加在圖中
         with tf.variable_scope('policy_grads'):
             # ys = policy;
             # xs = policy's parameters;
             # a_grads = the gradients of the policy to get more Q
             # tf.gradients will calculate dys/dxs with a initial gradients for ys, so this is dq/da * da/dparams
-            self.policy_grads = tf.gradients(ys=self.a, xs=self.e_params, grad_ys=a_grads)
+            self.policy_grads = tf.gradients(ys=self.a, xs=self.e_params, grad_ys=a_grads) #TF公式 求梯度(policy_grads)
 
         with tf.variable_scope('A_train'):
             opt = tf.train.AdamOptimizer(-self.lr)  # (- learning rate) for ascent policy
-            self.train_op = opt.apply_gradients(zip(self.policy_grads, self.e_params))
+            self.train_op = opt.apply_gradients(zip(self.policy_grads, self.e_params)) #求得的梯度(policy_grads)放入NN參數中
 
 
 ###############################  Critic  ####################################
@@ -174,6 +172,7 @@ class Critic(object):
 
 
 #####################  Memory  ####################
+# DQN來的。儲存很多過往記憶，隨機抽取來學習。
 
 class Memory(object):
     def __init__(self, capacity, dims):
@@ -193,47 +192,49 @@ class Memory(object):
         return self.data[indices, :]
 
 
-env = gym.make(ENV_NAME)
+
+# ================ 環境、基本設定 ===================
+env = gym.make(ENV_NAME) #openAI gym 環境
 env = env.unwrapped
 env.seed(1)
 
-state_dim = env.observation_space.shape[0]
-action_dim = env.action_space.shape[0]
-action_bound = env.action_space.high
+state_dim = env.observation_space.shape[0] #觀測值list
+action_dim = env.action_space.shape[0] #動作list
+action_bound = env.action_space.high #每個action的幅度 ex: -1~1
 
 # all placeholder for tf
-with tf.name_scope('S'):
+with tf.name_scope('S'): #現在狀態
     S = tf.placeholder(tf.float32, shape=[None, state_dim], name='s')
-with tf.name_scope('R'):
+# with tf.name_scope('A'): #現在動作 #影片有但code沒有(誤刪?)
+#     A = tf.placeholder(tf.float32, shape=[None, state_dim], name='a')
+with tf.name_scope('R'): #現在獎勵
     R = tf.placeholder(tf.float32, [None, 1], name='r')
-with tf.name_scope('S_'):
+with tf.name_scope('S_'): #下個狀態
     S_ = tf.placeholder(tf.float32, shape=[None, state_dim], name='s_')
 
 
 sess = tf.Session()
-
-# Create actor and critic.
 # They are actually connected to each other, details can be seen in tensorboard or in this picture:
-actor = Actor(sess, action_dim, action_bound, LR_A, REPLACEMENT)
-critic = Critic(sess, state_dim, action_dim, LR_C, GAMMA, REPLACEMENT, actor.a, actor.a_)
-actor.add_grad_to_graph(critic.a_grads)
+actor = Actor(sess, action_dim, action_bound, LR_A, REPLACEMENT) #創建actor。LR_A: learning rate、REPLACEMENT: 隔多少步提升一下target_net
+critic = Critic(sess, state_dim, action_dim, LR_C, GAMMA, REPLACEMENT, actor.a, actor.a_) #創建critic。actor.a_: actor用target_net輸出的動作
+actor.add_grad_to_graph(critic.a_grads) # 在actor加上從critic來的梯度(a_grads)
 
 sess.run(tf.global_variables_initializer())
 
-M = Memory(MEMORY_CAPACITY, dims=2 * state_dim + action_dim + 1)
+M = Memory(MEMORY_CAPACITY, dims=2 * state_dim + action_dim + 1)  #創建Memory
 
 if OUTPUT_GRAPH:
     tf.summary.FileWriter("logs/", sess.graph)
 
 var = 3  # control exploration
-
 t1 = time.time()
+
+# ================ learning update方式 ===================
 for i in range(MAX_EPISODES):
     s = env.reset()
     ep_reward = 0
 
     for j in range(MAX_EP_STEPS):
-
         if RENDER:
             env.render()
 
@@ -242,18 +243,18 @@ for i in range(MAX_EPISODES):
         a = np.clip(np.random.normal(a, var), -2, 2)    # add randomness to action selection for exploration
         s_, r, done, info = env.step(a)
 
-        M.store_transition(s, a, r / 10, s_)
+        M.store_transition(s, a, r / 10, s_) #儲存s,a,r,s_
 
         if M.pointer > MEMORY_CAPACITY:
             var *= .9995    # decay the action randomness
-            b_M = M.sample(BATCH_SIZE)
+            b_M = M.sample(BATCH_SIZE) #從memory中提取一些經歷
             b_s = b_M[:, :state_dim]
             b_a = b_M[:, state_dim: state_dim + action_dim]
             b_r = b_M[:, -state_dim - 1: -state_dim]
             b_s_ = b_M[:, -state_dim:]
 
-            critic.learn(b_s, b_a, b_r, b_s_)
-            actor.learn(b_s)
+            critic.learn(b_s, b_a, b_r, b_s_) #把經歷放進去學習
+            actor.learn(b_s) #把經歷放進去學習
 
         s = s_
         ep_reward += r

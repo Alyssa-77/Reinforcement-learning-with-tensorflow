@@ -17,7 +17,7 @@ def update():
         observation = env.reset()
 
         # RL choose action based on observation
-        action = RL.choose_action(str(observation))
+        action = RL.choose_action(str(observation)) # observation作為索引去搜尋a
 
         while True:
             # fresh env

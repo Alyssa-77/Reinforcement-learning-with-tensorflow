@@ -1,51 +1,47 @@
-"""
-Actor-Critic using TD-error as the Advantage, Reinforcement Learning.
-The cart pole example. Policy is oscillated.
-View more on my tutorial page: https://morvanzhou.github.io/tutorials/
-
+'''
 Using:
-tensorflow 1.0
-gym 0.8.0
-"""
+python 3.7.4  (Windows)
+python 3.8.10 (Linux)
+tensorflow 1.15
+'''
 
 import numpy as np
 import tensorflow as tf
-# import tensorflow.compat.v1 as tf
-# tf.disable_v2_behavior()
 import gym
 
-np.random.seed(2)
+np.random.seed(2) # 隨機種子
 tf.set_random_seed(2)  # reproducible 可重現的
 
+OUTPUT_GRAPH = False # 輸出 tensorboard 文件
+# DISPLAY_REWARD_THRESHOLD = 200  # 當 回合總reward > 200 時，顯示模擬窗口
+# RENDER = False  # 在螢幕上顯示模擬畫面。(只會回應出呼叫那一刻的畫面給你，要持續出現，需要寫迴圈)
+
 # Superparameters 定義參數
-OUTPUT_GRAPH = True
-# OUTPUT_REWARD = True
-MAX_EPISODE = 3000   # 3000
-DISPLAY_REWARD_THRESHOLD = 200  # renders environment if total episode reward is greater then this threshold
-MAX_EP_STEPS = 1000   # maximum time step in one episode
-RENDER = False  # rendering wastes time
-GAMMA = 0.9     # reward discount in TD error
-LR_A = 0.001    # learning rate for actor
-LR_C = 0.01     # learning rate for critic
+MAX_EPISODE = 3000      # episode次數
+MAX_EP_STEPS = 1000     # 1個episode最多可以有幾個step
+GAMMA = 0.9     # reward  r discount in TD error
+LR_A = 0.001    # actor的 learning rate 
+LR_C = 0.01     # critic的 learning rate
 
 env = gym.make('CartPole-v0')
 env.seed(1)  # reproducible
-env = env.unwrapped
+env = env.unwrapped # 取消限制
 
 N_F = env.observation_space.shape[0]
 N_A = env.action_space.n
 
-
+'''
+======================================= Class =======================================
+'''
 class Actor(object):
     def __init__(self, sess, n_features, n_actions, lr=0.001):
         self.sess = sess
-
         self.s = tf.placeholder(tf.float32, [1, n_features], "state")
         self.a = tf.placeholder(tf.int32, None, "act")
         self.td_error = tf.placeholder(tf.float32, None, "td_error")  # TD_error
 
         with tf.variable_scope('Actor'):
-            l1 = tf.layers.dense( #FC layer
+            l1 = tf.layers.dense(
                 inputs=self.s,
                 units=20,    # number of hidden units
                 activation=tf.nn.relu,
@@ -65,10 +61,10 @@ class Actor(object):
 
         with tf.variable_scope('exp_v'): #預計價值
             log_prob = tf.log(self.acts_prob[0, self.a]) #log(機率)
-            self.exp_v = tf.reduce_mean(log_prob * self.td_error)  # advantage (TD_error) guided loss
+            self.exp_v = tf.reduce_mean(log_prob * self.td_error)  # (log機率)*(TD_error)，機率要增還減。
 
         with tf.variable_scope('train'): #最大化獎勵=最小化(-V)
-            self.train_op = tf.train.AdamOptimizer(lr).minimize(-self.exp_v)  # minimize(-exp_v) = maximize(exp_v)
+            self.train_op = tf.train.AdamOptimizer(lr).minimize(-self.exp_v)  # 想最大化預計價值(exp_v) = 最小化(-exp_v)
 
     def learn(self, s, a, td): #透過s,a,td 學習該加大幅度或減小
         s = s[np.newaxis, :]
@@ -85,7 +81,6 @@ class Actor(object):
 class Critic(object):
     def __init__(self, sess, n_features, lr=0.01):
         self.sess = sess
-
         self.s = tf.placeholder(tf.float32, [1, n_features], "state")
         self.v_ = tf.placeholder(tf.float32, [1, 1], "v_next")
         self.r = tf.placeholder(tf.float32, None, 'r')
@@ -114,49 +109,41 @@ class Critic(object):
         with tf.variable_scope('squared_TD_error'): #TD_error當作loss，進行誤差的反向傳遞
             self.td_error = self.r + GAMMA * self.v_ - self.v
             self.loss = tf.square(self.td_error)    # TD_error = (r+gamma*V_next) - V_eval
-            summary =tf.summary.scalar('my reward', self.r)
-            # self.sess.run(summary)
-
         
         with tf.variable_scope('train'):
             self.train_op = tf.train.AdamOptimizer(lr).minimize(self.loss)
 
-    def learn(self, s, r, s_): #td_error = V(下個狀態) - V(上個狀態)
+    def learn(self, s, r, s_): #td_error = V(下個狀態) - V(上個狀態)  價值相減
         s, s_ = s[np.newaxis, :], s_[np.newaxis, :]
 
         v_ = self.sess.run(self.v, {self.s: s_})
-        td_error, _ = self.sess.run([self.td_error, self.train_op],
-                                          {self.s: s, self.v_: v_, self.r: r})
+        td_error, _ = self.sess.run([self.td_error, self.train_op], {self.s: s, self.v_: v_, self.r: r})
         return td_error
 
-
+'''
+======================================= Main =======================================
+'''
 sess = tf.Session()
 
 actor = Actor(sess, n_features=N_F, n_actions=N_A, lr=LR_A)
-critic = Critic(sess, n_features=N_F, lr=LR_C)     # we need a good teacher, so the teacher should learn faster than the actor
+critic = Critic(sess, n_features=N_F, lr=LR_C)      # critic應該要學得比actor快，所以LR_C > LR_A
 
 sess.run(tf.global_variables_initializer())
 
-if OUTPUT_GRAPH:
+if OUTPUT_GRAPH: # tensorboard 分析圖
     tf.summary.FileWriter("logs/", sess.graph)
-
-# if OUTPUT_REWARD:
-#     tf.summary.FileWriter("logs/", sess.summary)
-
 
 for i_episode in range(MAX_EPISODE): #遊戲回合
     s = env.reset()
     t = 0
     track_r = []
-    while True:
-        if RENDER: env.render()
+    while True: # 每一步
+        # if RENDER: env.render()
 
         a = actor.choose_action(s)
-
         s_, r, done, info = env.step(a)
 
         if done: r = -20
-
         track_r.append(r)
 
         td_error = critic.learn(s, r, s_)  # gradient = grad[r + gamma * V(s_) - V(s)]  #critic給出評分：td_error
@@ -172,7 +159,7 @@ for i_episode in range(MAX_EPISODE): #遊戲回合
                 running_reward = ep_rs_sum
             else:
                 running_reward = running_reward * 0.95 + ep_rs_sum * 0.05
-            if running_reward > DISPLAY_REWARD_THRESHOLD: RENDER = True  # rendering
-            print("episode:", i_episode, "  reward:", int(running_reward))
+            # if running_reward > DISPLAY_REWARD_THRESHOLD: RENDER = True  # 顯示圖
+            print("episode:", i_episode, "  reward:", int(running_reward)) # 存成矩陣，印成圖
             break
 

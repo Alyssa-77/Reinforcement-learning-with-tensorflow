@@ -1,11 +1,10 @@
 """
 Asynchronous Advantage Actor Critic (A3C) with discrete action space, Reinforcement Learning.
-
 The Cartpole example using distributed tensorflow + multiprocessing.
-
 View more on my tutorial page: https://morvanzhou.github.io/
-
 """
+
+# 
 
 import multiprocessing as mp
 import tensorflow as tf

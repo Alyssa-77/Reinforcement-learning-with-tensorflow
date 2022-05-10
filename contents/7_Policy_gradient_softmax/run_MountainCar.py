@@ -1,8 +1,6 @@
 """
 Policy Gradient, Reinforcement Learning.
-
-The cart pole example
-
+The cart pole example (遊戲2)
 View more on my tutorial page: https://morvanzhou.github.io/tutorials/
 
 Using:
@@ -15,7 +13,7 @@ from RL_brain import PolicyGradient
 import matplotlib.pyplot as plt
 
 DISPLAY_REWARD_THRESHOLD = -2000  # renders environment if total episode reward is greater then this threshold
-# episode: 154   reward: -10667
+# episode: 154   reward: -10667  (第幾回合該有多少獎勵)
 # episode: 387   reward: -2009
 # episode: 489   reward: -1006
 # episode: 628   reward: -502

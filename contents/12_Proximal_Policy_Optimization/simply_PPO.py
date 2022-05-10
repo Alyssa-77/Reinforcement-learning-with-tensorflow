@@ -4,13 +4,15 @@ A simple version of Proximal Policy Optimization (PPO) using single thread.
 Based on:
 1. Emergence of Locomotion Behaviours in Rich Environments (Google Deepmind): [https://arxiv.org/abs/1707.02286]
 2. Proximal Policy Optimization Algorithms (OpenAI): [https://arxiv.org/abs/1707.06347]
-
 View more on my tutorial website: https://morvanzhou.github.io/tutorials
 
 Dependencies:
 tensorflow r1.2
 gym 0.9.2
 """
+
+#單線程版本的PPO。較簡單。
+#在線更新on policy，沒有記憶庫memory，訓練效果較差。
 
 import tensorflow as tf
 import numpy as np
@@ -29,11 +31,10 @@ S_DIM, A_DIM = 3, 1
 METHOD = [
     dict(name='kl_pen', kl_target=0.01, lam=0.5),   # KL penalty
     dict(name='clip', epsilon=0.2),                 # Clipped surrogate objective, find this is better
-][1]        # choose the method for optimization
+][1]    # choose the method for optimization #選0或1，來決定要用KL還是CLIP方法。
 
 
 class PPO(object):
-
     def __init__(self):
         self.sess = tf.Session()
         self.tfs = tf.placeholder(tf.float32, [None, S_DIM], 'state')
@@ -85,7 +86,7 @@ class PPO(object):
         # adv = (adv - adv.mean())/(adv.std()+1e-6)     # sometimes helpful
 
         # update actor
-        if METHOD['name'] == 'kl_pen':
+        if METHOD['name'] == 'kl_pen':  #使用KL更新方法
             for _ in range(A_UPDATE_STEPS):
                 _, kl = self.sess.run(
                     [self.atrain_op, self.kl_mean],
@@ -97,13 +98,13 @@ class PPO(object):
             elif kl > METHOD['kl_target'] * 1.5:
                 METHOD['lam'] *= 2
             METHOD['lam'] = np.clip(METHOD['lam'], 1e-4, 10)    # sometimes explode, this clipping is my solution
-        else:   # clipping method, find this is better (OpenAI's paper)
+        else:   # clipping method, find this is better (OpenAI's paper) #使用CLIP更新方法 (更新10次)
             [self.sess.run(self.atrain_op, {self.tfs: s, self.tfa: a, self.tfadv: adv}) for _ in range(A_UPDATE_STEPS)]
 
         # update critic
         [self.sess.run(self.ctrain_op, {self.tfs: s, self.tfdc_r: r}) for _ in range(C_UPDATE_STEPS)]
 
-    def _build_anet(self, name, trainable):
+    def _build_anet(self, name, trainable): #actor net
         with tf.variable_scope(name):
             l1 = tf.layers.dense(self.tfs, 100, tf.nn.relu, trainable=trainable)
             mu = 2 * tf.layers.dense(l1, A_DIM, tf.nn.tanh, trainable=trainable)
@@ -127,30 +128,31 @@ all_ep_r = []
 
 for ep in range(EP_MAX):
     s = env.reset()
-    buffer_s, buffer_a, buffer_r = [], [], []
+    buffer_s, buffer_a, buffer_r = [], [], [] #緩存
     ep_r = 0
     for t in range(EP_LEN):    # in one episode
         env.render()
-        a = ppo.choose_action(s)
-        s_, r, done, _ = env.step(a)
+        a = ppo.choose_action(s) #根據環境s選擇a
+        s_, r, done, _ = env.step(a) #以a獲得s_、r、done(是否結束)
         buffer_s.append(s)
         buffer_a.append(a)
-        buffer_r.append((r+8)/8)    # normalize reward, find to be useful
+        buffer_r.append((r+8)/8)    # normalize reward, 發現有幫助
         s = s_
         ep_r += r
 
         # update ppo
-        if (t+1) % BATCH == 0 or t == EP_LEN-1:
+        if (t+1) % BATCH == 0 or t == EP_LEN-1: #若 buffer收集一個batch了 或 episode完了
+            #計算discount reward
             v_s_ = ppo.get_v(s_)
             discounted_r = []
             for r in buffer_r[::-1]:
-                v_s_ = r + GAMMA * v_s_
+                v_s_ = r + GAMMA * v_s_ #gamma：discount factor
                 discounted_r.append(v_s_)
             discounted_r.reverse()
 
-            bs, ba, br = np.vstack(buffer_s), np.vstack(buffer_a), np.array(discounted_r)[:, np.newaxis]
+            bs, ba, br = np.vstack(buffer_s), np.vstack(buffer_a), np.array(discounted_r)[:, np.newaxis] #所有buffer放進來，進行更新
             buffer_s, buffer_a, buffer_r = [], [], []
-            ppo.update(bs, ba, br)
+            ppo.update(bs, ba, br) #所有放進PPO，進行更新。
     if ep == 0: all_ep_r.append(ep_r)
     else: all_ep_r.append(all_ep_r[-1]*0.9 + ep_r*0.1)
     print(
