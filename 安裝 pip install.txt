@@ -1,0 +1,18 @@
+> 安裝Python 3.7.4
+
+> cd C:\Users\user\Desktop\77\PythonProjects\RL
+
+> 選擇直譯器
+Cmd + Shift + P
+Python: Select Interpreter (選)
+
+> 安裝虛擬環境
+https://pythonviz.com/vscode/visual-studio-code-virtual-environment-setup/
+virtualenv .venv --python=python3.7
+
+
+pip install pandas
+pip install numpy
+pip install tensorflow==1.15.0
+pip install gym==0.10.5
+pip install matplotlib
