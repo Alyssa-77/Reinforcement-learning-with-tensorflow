@@ -1,0 +1,7 @@
+專案程式碼在
+
+# 舊筆電
+D:\U7\機器學習\Reinforcement-learning-with-tensorflow-master\contents
+
+# 新
+C:\Users\user\Desktop\ML\RL_Tensorflow\contents
