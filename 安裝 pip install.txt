@@ -15,4 +15,5 @@ pip install pandas
 pip install numpy
 pip install tensorflow==1.15.0
 pip install gym==0.10.5
+pip install torch==1.11.0
 pip install matplotlib
