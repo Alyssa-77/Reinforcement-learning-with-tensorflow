@@ -12,12 +12,12 @@ import gym
 np.random.seed(2) # 隨機種子
 tf.set_random_seed(2)  # reproducible 可重現的
 
-OUTPUT_GRAPH = False # 輸出 tensorboard 文件
+OUTPUT_GRAPH = True # 輸出 tensorboard 文件
 # DISPLAY_REWARD_THRESHOLD = 200  # 當 回合總reward > 200 時，顯示模擬窗口
 # RENDER = False  # 在螢幕上顯示模擬畫面。(只會回應出呼叫那一刻的畫面給你，要持續出現，需要寫迴圈)
 
 # Superparameters 定義參數
-MAX_EPISODE = 3000      # episode次數
+MAX_EPISODE = 100      # episode次數
 MAX_EP_STEPS = 1000     # 1個episode最多可以有幾個step
 GAMMA = 0.9     # reward  r discount in TD error
 LR_A = 0.001    # actor的 learning rate 
@@ -36,24 +36,24 @@ N_A = env.action_space.n
 class Actor(object):
     def __init__(self, sess, n_features, n_actions, lr=0.001):
         self.sess = sess
-        self.s = tf.placeholder(tf.float32, [1, n_features], "state")
+        self.s = tf.placeholder(tf.float32, [1, n_features], "state") # placeholde佔位符
         self.a = tf.placeholder(tf.int32, None, "act")
         self.td_error = tf.placeholder(tf.float32, None, "td_error")  # TD_error
 
         with tf.variable_scope('Actor'):
-            l1 = tf.layers.dense(
+            l1 = tf.layers.dense(       # dense=FC
                 inputs=self.s,
-                units=20,    # number of hidden units
-                activation=tf.nn.relu,
-                kernel_initializer=tf.random_normal_initializer(0., .1),    # weights
-                bias_initializer=tf.constant_initializer(0.1),  # biases
+                units=20,               # 隱藏層的unit數量
+                activation=tf.nn.relu,  # RELU
+                kernel_initializer=tf.random_normal_initializer(0., .1),    # weights，高斯分布(平均值=0 , 標準差=1)。NN權重的推薦初始值。
+                bias_initializer=tf.constant_initializer(0.1),  # biases，初始值(value)。生成一個初始值為常數的tensor物件。
                 name='l1'
             )
 
-            self.acts_prob = tf.layers.dense(
-                inputs=l1,
-                units=n_actions,    # output units
-                activation=tf.nn.softmax,   # get action probabilities
+            self.acts_prob = tf.layers.dense(   # dense=FC
+                inputs=l1,              
+                units=n_actions,                # output units
+                activation=tf.nn.softmax,       # get action probabilities
                 kernel_initializer=tf.random_normal_initializer(0., .1),  # weights
                 bias_initializer=tf.constant_initializer(0.1),  # biases
                 name='acts_prob'
@@ -86,9 +86,9 @@ class Critic(object):
         self.r = tf.placeholder(tf.float32, None, 'r')
 
         with tf.variable_scope('Critic'):
-            l1 = tf.layers.dense(
+            l1 = tf.layers.dense(       # FC
                 inputs=self.s,
-                units=20,  # number of hidden units
+                units=20,               # number of hidden units
                 activation=tf.nn.relu,  # None
                 # have to be linear to make sure the convergence of actor.
                 # But linear approximator seems hardly learns the correct Q.
@@ -160,6 +160,6 @@ for i_episode in range(MAX_EPISODE): #遊戲回合
             else:
                 running_reward = running_reward * 0.95 + ep_rs_sum * 0.05
             # if running_reward > DISPLAY_REWARD_THRESHOLD: RENDER = True  # 顯示圖
-            print("episode:", i_episode, "  reward:", int(running_reward)) # 存成矩陣，印成圖
+            print("episode:", i_episode, "  reward:", int(running_reward)) # todo 存成矩陣，印成圖
             break
 

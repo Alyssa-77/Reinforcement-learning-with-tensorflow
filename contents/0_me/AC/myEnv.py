@@ -1,5 +1,10 @@
 '''
-my env
+core.Env 是 gym 的環境基類,自定義的環境就是根據自己的需要重寫其中的方法；
+必須要重寫的方法有: 
+__init__()：構造函數
+reset()：初始化環境
+step()：環境動作,即環境對agent的反饋
+render()：如果要進行可視化則實現
 '''
 import logging
 import random
@@ -8,17 +13,17 @@ import gym
 logger = logging.getLogger(__name__)
 
 class myEnv(gym.Env):
-    metadata = {
-        'render.modes': ['human', 'rgb_array'],
-        'video.frames_per_second': 2
-    }
+    # metadata = {
+    #     'render.modes': ['human', 'rgb_array'],
+    #     'video.frames_per_second': 2
+    # }
 
     def __init__(self):
 
-        self.states = range(1,17) #狀態空間 d,b,p,o
+        self.states = [116.4, 10, 68713, 0] #狀態空間 delay,bw,tput,loss
 
-        self.x=[150,250,350,450] * 4
-        self.y=[450] * 4 + [350] * 4 + [250] * 40 + [150] * 4
+        # self.x=[150,250,350,450] * 4
+        # self.y=[450] * 4 + [350] * 4 + [250] * 40 + [150] * 4
 
         self.terminate_states = dict()  #終止狀態為字典格式
         self.terminate_states[11] = 1
@@ -78,6 +83,7 @@ class myEnv(gym.Env):
         self.np_random, seed = random.seeding.np_random(seed)
         return [seed]
 
+    '''
     def getTerminal(self):
         return self.terminate_states
 
@@ -92,11 +98,12 @@ class myEnv(gym.Env):
 
     def getTerminate_states(self):
         return self.terminate_states
+    '''
 
     def setAction(self,s):
         self.state=s
 
-    def step(self, action):
+    def step(self, action): # 推進一個時間步長，返回observation，reward，done，info
         #系統當前狀態
         state = self.state
         if state in self.terminate_states:
@@ -122,11 +129,11 @@ class myEnv(gym.Env):
 
         return next_state, r, is_terminal,{}
 
-    def reset(self):
+    def reset(self): # 重置環境的狀態，返回觀察
         self.state = self.states[int(random.random() * len(self.states))]
         return self.state
 
-    def render(self, mode='human'): #畫圖
+    def render(self, mode='human'): #畫出環境圖
         from gym.envs.classic_control import rendering
         screen_width = 600
         screen_height = 600
