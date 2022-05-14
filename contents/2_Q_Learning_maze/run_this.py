@@ -19,8 +19,8 @@ from RL_brain import QLearningTable # RL
 
 
 def update():
-    for episode in range(100): # 跑100回合
-        observation = env.reset() # 環境觀測值=我的位置 (reset初始設定為1,1)
+    for episode in range(100):      # 跑100回合
+        observation = env.reset()   # 環境觀測值=我的位置 (reset初始設定為1,1)
 
         while True:         # 在回合中一直玩
             env.render()    # 刷新環境
@@ -31,6 +31,7 @@ def update():
             observation = observation_ # 把observation_作為下次的s
 
             if done:    # 到黑洞或寶藏->結束這回合
+                # print(RL.q_table, "\n")
                 break
 
     print('game over')  # end of game
@@ -44,3 +45,4 @@ if __name__ == "__main__":
 
     env.after(100, update) # Tkinter編寫規則
     env.mainloop() # Tkinter編寫規則
+    
