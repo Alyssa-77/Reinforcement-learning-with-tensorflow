@@ -14,7 +14,7 @@ from myRL import QLearningTable     # RL
 
 def update():
     for episode in range(100):      # 跑100回合
-        observation = env.reset()   # 環境觀測值=我的位置 (reset初始設定為1,1)
+        observation = env.reset()   # 環境觀測值=我的位置 (reset初始設定)
 
         while True:         # 在回合中一直玩
             env.render()    # 刷新環境
@@ -25,6 +25,7 @@ def update():
             observation = observation_ # 把observation_作為下次的s
 
             if done:    # 到黑洞或寶藏->結束這回合
+                # print(RL.q_table, "\n")
                 break
 
     print('game over')  # end of game
@@ -33,4 +34,5 @@ def update():
 
 if __name__ == "__main__":
     env = Quic() # 設定環境
-    RL = QLearningTable(actions=list(range(env.n_actions))) # RL=學習方法 (action=n_actions=['u', 'd', 'l', 'r'])
+    RL = QLearningTable(actions=list(range(env.n_actions))) # RL=學習方法 
+    # n_actions=[4000, 8000, 10000, 20000, 40000, 80000, 100000, 200000, 400000, 800000, 1000000] (16KB~16MB, 11 sizes)
