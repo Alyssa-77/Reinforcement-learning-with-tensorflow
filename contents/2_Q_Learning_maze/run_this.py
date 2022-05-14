@@ -20,12 +20,12 @@ from RL_brain import QLearningTable # RL
 
 def update():
     for episode in range(100): # 跑100回合
-        observation = env.reset() # 環境觀測值=我的位置，(reset初始設定為1,1)
+        observation = env.reset() # 環境觀測值=我的位置 (reset初始設定為1,1)
 
         while True:         # 在回合中一直玩
             env.render()    # 刷新環境
 
-            action = RL.choose_action(str(observation))     # choose_action 挑選a：基於觀測值[索引](state)
+            action = RL.choose_action(str(observation))     # choose_action：基於觀測值state挑選a (state是Q table的索引)
             observation_, reward, done = env.step(action)   # step 返回值: 下個狀態、獲得獎勵、是否結束(到黑洞或寶藏)
             RL.learn(str(observation), action, reward, str(observation_)) # learn：s,a,a,s' 以這4個參數學習
             observation = observation_ # 把observation_作為下次的s
@@ -40,7 +40,7 @@ def update():
 
 if __name__ == "__main__":
     env = Maze() # 設定環境
-    RL = QLearningTable(actions=list(range(env.n_actions))) # RL=學習方法
+    RL = QLearningTable(actions=list(range(env.n_actions))) # RL=學習方法 (action=n_actions=['u', 'd', 'l', 'r'])
 
     env.after(100, update) # Tkinter編寫規則
     env.mainloop() # Tkinter編寫規則
