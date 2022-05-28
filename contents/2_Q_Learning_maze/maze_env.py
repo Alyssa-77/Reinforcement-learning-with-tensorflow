@@ -83,6 +83,7 @@ class Maze(tk.Tk, object):
 
     def reset(self):
         self.update()
+        # print("up",self.update())
         time.sleep(0.5)
         self.canvas.delete(self.rect)
         origin = np.array([20, 20])
@@ -145,5 +146,5 @@ def update():
 
 if __name__ == '__main__':
     env = Maze()
-    env.after(100, update)
+    env.after(100, update)  # 時間間隔之後，執行指定的函數
     env.mainloop()

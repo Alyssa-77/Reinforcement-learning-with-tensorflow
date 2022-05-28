@@ -43,6 +43,6 @@ if __name__ == "__main__":
     env = Maze() # 設定環境
     RL = QLearningTable(actions=list(range(env.n_actions))) # RL=學習方法 (action=n_actions=['u', 'd', 'l', 'r'])
 
-    env.after(100, update) # Tkinter編寫規則
+    env.after(100, update) # Tkinter編寫規則 # 時間間隔之後，執行指定的函數
     env.mainloop() # Tkinter編寫規則
     
