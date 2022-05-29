@@ -24,6 +24,7 @@ class QLearningTable:
             action = np.random.choice(state_action[state_action == np.max(state_action)].index)
         else:                                   #若隨機數>ε(0.9)，10%機率隨機選擇a
             action = np.random.choice(self.actions)
+        print("choose action: ", action)
         return action
 
     def learn(self, s, a, r, s_):

@@ -33,27 +33,28 @@ class Quic(object):
         self.n_actions = len(self.action_space) # 11
         self._build_quic()
 
-    def _build_quic(self):
-        self.bw = -1
-        self.loss = -1
-        self.delay = -1
-        self.tput = -1
+    def _build_quic(self): # zscore avg bw100_6
+        self.bw = 7.4
+        self.loss = 0.04
+        self.delay = 155.6
+        self.tput = -59342
         
     def reset(self): # return 觀測值 (state)
         # self.update()   # 回合結束，更新 todo 有問題 "QUIC has no attribute update???"
         time.sleep(0.5)
         # 回到初始狀態 f=10000
         subprocess.Popen(["sudo", "xterm", "-e", SHELL_RESET]) # open xterm run server_reset.sh (only reset and make) ?
-        self.bw = -1
-        self.loss = -1
-        self.delay = -1
-        self.tput = -1
+        self.bw = 7.4
+        self.loss = 0.04
+        self.delay = 155.6
+        self.tput = -59342
         return self
 
     def step(self, action): # return s', done, r
         s = [self.bw, self.loss, self.delay, self.tput] # (bodp)
         # 依照action跑quic
-        dict_perf = quicServer(action) # ex: action="0x10000"
+        wnd = F_DICT[action]        # ex: action=2
+        dict_perf = quicServer(wnd) # ex: wnd="0x10000"
 
         # 取得新s，放入s_
         bw = float((dict_perf["bw"].split(" "))[0])          # Mbps
@@ -64,19 +65,14 @@ class Quic(object):
         s_ = [bw, loss, delay, tput]  # next state (bodp)
 
         # reward function, done
-        if s_[3] == 0:      # todo 何時done? tput=0 不done重做，其他時候done
-            reward = 0
-            done = True
-            s_ = 'terminal'
-        else:
-            z = zscore(s_[1], s_[2], s_[3]) # s_[bodp]，z=[zo, zd, zp]
-            reward = W_LOSS*z[0]+W_DELAY*z[1]+W_TPUT*z[2]   # (-0.5loss, -0.5delay, 0tput) # todo reward設計
-            done = False
+        z = zscore(s_[1], s_[2], s_[3], wnd=action) # s_[bodp]，z=[zo, zd, zp]
+        reward = W_LOSS*z[0]+W_DELAY*z[1]+W_TPUT*z[2]   # (-0.5loss, -0.5delay, 0tput) # todo reward設計
+        done = True
 
         return s_, reward, done
 
-    def render(self): # todo 沒動 not sure 
-        time.sleep(0.1)
+    # def render(self): # todo 沒動 not sure 
+    #     time.sleep(0.1)
         # self.update()
 
 
@@ -85,7 +81,7 @@ def update():
     for t in range(10):
         s = env.reset()
         while True:
-            env.render()
+            # env.render()
             a = 1
             s, r, done = env.step(a)
             if done:
@@ -128,6 +124,8 @@ def getData(data):
 # other function u7 ================================================================
 def rewriteWnd(shell, wnd):
     # change SHELL wnd
+    wnd = str(wnd)
+    print(wnd)
     string = "define QUIC_DEFAULT_STREAM_FC_WINDOW_SIZE"
     # string = "define QUIC_DEFAULT_CONN_FLOW_CONTROL_WINDOW"
     replacement = ""

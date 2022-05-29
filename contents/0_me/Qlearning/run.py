@@ -18,7 +18,7 @@ def run():
         observation = env.reset()   # 環境觀測值 (reset初始設定)
 
         while True:         # 在回合中一直玩
-            env.render()    # 刷新環境(每一小步，還沒到黑洞或寶藏之前)
+            # env.render()    # 刷新環境(每一小步，還沒到黑洞或寶藏之前)
 
             action = RL.choose_action(str(observation))     # 基於觀測值observation挑選a (observation是Q table的索引)
             observation_, reward, done = env.step(action)   # 給了動作後，返回: 下個狀態、獲得獎勵、是否結束(到黑洞或寶藏)
@@ -27,7 +27,7 @@ def run():
 
             if done:    # 到黑洞或寶藏->結束這回合
                 # print(RL.q_table, "\n")
-                print("DONE", "\n")
+                print("DONE: ",episode,"\n")
                 break
 
     print('game over')  # end of game
