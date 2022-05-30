@@ -38,13 +38,9 @@ class QLearningTable:
 
     def check_state_exist(self, state):             # 不知道Q table大小，檢查此索引(state)是否存在
         if state not in self.q_table.index:         # 若從來沒經歷過此s，新增到Q table
-            self.q_table = self.q_table.append(     # append new state to q table
-                pd.Series( #全0
-                    [0]*len(self.actions),
-                    index=self.q_table.columns,
-                    name=state,
-                )
-            )
+            # append new state to q table
+            self.q_table = pd.concat([self.q_table, pd.Series([0]*len(self.actions), index=self.q_table.columns, name=state)]) #全0
+
 
     # u7
     def show_table(self):
